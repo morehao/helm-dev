@@ -1,0 +1,96 @@
+elasticsearch:
+  image:
+    repository: docker.elastic.co/elasticsearch/elasticsearch
+    tag: "8.16.6"
+    pullPolicy: IfNotPresent
+  
+  containerName: elasticsearch
+  
+  config:
+    discoveryType: single-node
+    xpackSecurityEnabled: false
+    xpackSecurityEnrollmentEnabled: false
+    javaOpts: "-Xms1g -Xmx1g"
+    javaOptions: "-XX:UseSVE=0"
+  
+  service:
+    type: ClusterIP
+    port: 9200
+    targetPort: 9200
+  
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: elasticsearch.local
+        paths:
+          - path: /
+            pathType: Prefix
+  
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 10Gi
+    hostPath: ""  # 如果使用 hostPath，设置路径
+  
+  resources:
+    limits:
+      memory: 2Gi
+      cpu: 1000m
+    requests:
+      memory: 1Gi
+      cpu: 500m
+  
+  ulimits:
+    memlock:
+      soft: -1
+      hard: -1
+
+kibana:
+  image:
+    repository: docker.elastic.co/kibana/kibana
+    tag: "8.16.6"
+    pullPolicy: IfNotPresent
+  
+  containerName: kibana
+  
+  service:
+    type: ClusterIP
+    port: 5601
+    targetPort: 5601
+  
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: kibana.local
+        paths:
+          - path: /
+            pathType: Prefix
+  
+  resources:
+    limits:
+      memory: 1Gi
+      cpu: 500m
+    requests:
+      memory: 512Mi
+      cpu: 250m
+
+# 全局配置
+global:
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# 网络配置
+networkPolicy:
+  enabled: false
+
+# 服务账户
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""

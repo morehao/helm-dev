@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "elasticsearch-kibana.fullname" . }}-elasticsearch
+  labels:
+    {{- include "elasticsearch-kibana.labels" . | nindent 4 }}
+    app.kubernetes.io/component: elasticsearch
+spec:
+  type: {{ .Values.elasticsearch.service.type }}
+  ports:
+  - port: {{ .Values.elasticsearch.service.port }}
+    targetPort: {{ .Values.elasticsearch.service.targetPort }}
+    protocol: TCP
+    name: http
+  selector:
+    {{- include "elasticsearch-kibana.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: elasticsearch

@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "elasticsearch-kibana.fullname" . }}-elasticsearch
+  labels:
+    {{- include "elasticsearch-kibana.labels" . | nindent 4 }}
+    app.kubernetes.io/component: elasticsearch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "elasticsearch-kibana.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: elasticsearch
+  template:
+    metadata:
+      labels:
+        {{- include "elasticsearch-kibana.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: elasticsearch
+    spec:
+      {{- with .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "elasticsearch-kibana.serviceAccountName" . }}
+      securityContext:
+        fsGroup: 1000
+      containers:
+      - name: {{ .Values.elasticsearch.containerName }}
+        image: "{{ .Values.elasticsearch.image.repository }}:{{ .Values.elasticsearch.image.tag }}"
+        imagePullPolicy: {{ .Values.elasticsearch.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 9200
+          protocol: TCP
+        - name: transport
+          containerPort: 9300
+          protocol: TCP
+        env:
+        - name: discovery.type
+          value: {{ .Values.elasticsearch.config.discoveryType }}
+        - name: xpack.security.enabled
+          value: "{{ .Values.elasticsearch.config.xpackSecurityEnabled }}"
+        - name: xpack.security.enrollment.enabled
+          value: "{{ .Values.elasticsearch.config.xpackSecurityEnrollmentEnabled }}"
+        - name: ES_JAVA_OPTS
+          value: {{ .Values.elasticsearch.config.javaOpts }}
+        - name: JAVA_OPTIONS
+          value: {{ .Values.elasticsearch.config.javaOptions }}
+        resources:
+          {{- toYaml .Values.elasticsearch.resources | nindent 10 }}
+        volumeMounts:
+        - name: data
+          mountPath: /usr/share/elasticsearch/data
+        - name: config
+          mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          subPath: elasticsearch.yml
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          capabilities:
+            add:
+            - IPC_LOCK
+            - SYS_RESOURCE
+        livenessProbe:
+          httpGet:
+            path: /_cluster/health
+            port: http
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /_cluster/health?wait_for_status=yellow&timeout=5s
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "elasticsearch-kibana.fullname" . }}-elasticsearch-config
+      - name: data
+        {{- if .Values.elasticsearch.persistence.enabled }}
+        {{- if .Values.elasticsearch.persistence.hostPath }}
+        hostPath:
+          path: {{ .Values.elasticsearch.persistence.hostPath }}
+          type: DirectoryOrCreate
+        {{- else }}
+        persistentVolumeClaim:
+          claimName: {{ include "elasticsearch-kibana.fullname" . }}-elasticsearch-pvc
+        {{- end }}
+        {{- else }}
+        emptyDir: {}
+        {{- end }}

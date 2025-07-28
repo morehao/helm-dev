@@ -1,0 +1,18 @@
+{{- if and .Values.elasticsearch.persistence.enabled (not .Values.elasticsearch.persistence.hostPath) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "elasticsearch-kibana.fullname" . }}-elasticsearch-pvc
+  labels:
+    {{- include "elasticsearch-kibana.labels" . | nindent 4 }}
+    app.kubernetes.io/component: elasticsearch
+spec:
+  accessModes:
+    - {{ .Values.elasticsearch.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.elasticsearch.persistence.size }}
+  {{- if .Values.elasticsearch.persistence.storageClass }}
+  storageClassName: {{ .Values.elasticsearch.persistence.storageClass }}
+  {{- end }}
+{{- end }}
