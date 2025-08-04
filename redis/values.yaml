@@ -1,0 +1,5 @@
+redis:
+  name: redis
+  replicaCount: 1
+  image: redis:7.4.1
+  port: 6379
