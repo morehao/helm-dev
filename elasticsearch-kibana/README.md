@@ -22,5 +22,5 @@ helm status my-elastic
 
 `kubectl port-forward svc/my-elastic-elasticsearch-kibana-elasticsearch 9200:9200`
 
-访问 `http://127.0.0.1:9000`
+测试连接：`curl http://localhost:9200/_cluster/health`
 

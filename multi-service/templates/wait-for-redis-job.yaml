@@ -1,0 +1,24 @@
+{{- if .Values.preInstallHook.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wait-for-redis
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: wait-for-redis
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z redis.default.svc.cluster.local {{ .Values.redis.port }}; do
+                echo "Waiting for Redis...";
+                sleep 2;
+              done
+{{- end }}

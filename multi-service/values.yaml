@@ -1,0 +1,10 @@
+redis:
+  image: redis:7.4.1
+  port: 6379
+
+nginx:
+  image: nginx:latest
+  port: 80
+
+preInstallHook:
+  enabled: true
