@@ -1,0 +1,9 @@
+mysql:
+  name: mysql
+  namespace: default
+  replicaCount: 1
+  image:
+    repository: mysql
+    tag: 8.0.42
+  rootPassword: 123456
+  database: yygu_db
