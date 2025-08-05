@@ -1,0 +1,53 @@
+# templates/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.mysql.name }}
+  namespace: {{ .Values.mysql.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.mysql.name }}
+  serviceName: {{ .Values.mysql.name }}
+  replicas: {{ .Values.mysql.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.mysql.name }}
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - {{ .Values.mysql.name }}
+              topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: {{ .Values.mysql.name }}
+          image: {{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "{{ .Values.mysql.rootPassword }}"
+            - name: MYSQL_DATABASE
+              value: "{{ .Values.mysql.database }}"
+          ports:
+            - containerPort: 3306
+              name: mysql
+---
+# templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.mysql.name }}
+  namespace: {{ .Values.mysql.namespace }}
+spec:
+  clusterIP: None  # 关键点，必须是 None
+  selector:
+    app.kubernetes.io/name: {{ .Values.mysql.name }}
+  ports:
+    - port: 3306
+      name: mysql
+      targetPort: 3306

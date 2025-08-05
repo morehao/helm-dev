@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "post-install-job"
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+    "helm.sh/hook-weight": "0"
+spec:
+  template:
+    spec:
+      containers:
+        - name: post-install
+          image: "{{ .Values.postInstall.image | default "busybox:latest" }}"
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "=== 开始执行 post-install 任务 ===";
+              echo "时间：$(date)";
+              echo "环境：{{ .Values.env | default "development" }}";
+              echo "Pod 名称：$HOSTNAME";
+              echo "命名空间：$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)";
+              
+              echo "=== 执行自定义逻辑 ===";
+              # 你的实际逻辑放这里
+              sleep 2;
+              echo "处理中...";
+              sleep 1;
+              
+              echo "=== 任务完成 ===";
+              echo "✅ 后置任务执行成功";
+              
+              # 调试模式：让容器保持运行一段时间，方便查看日志
+              {{- if .Values.debug }}
+              echo "🐛 调试模式：容器将保持运行 300 秒";
+              sleep 300;
+              {{- else }}
+              echo "正常模式：任务完成，容器即将退出";
+              {{- end }}
+          env:
+            - name: ENV
+              value: "{{ .Values.env | default "development" }}"
+            - name: DEBUG
+              value: "{{ .Values.debug | default false }}"
+      restartPolicy: Never
+  backoffLimit: 3
+  activeDeadlineSeconds: 600  # 10分钟超时
